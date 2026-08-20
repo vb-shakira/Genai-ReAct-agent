@@ -15,10 +15,9 @@ export function resolveModel(provider: ProviderId): {
   model: LanguageModel;
   label: string;
 } {
-  if (provider === "groq") {
-    const apiKey = process.env["GROQ_API_KEY"];
-    if (!apiKey) {
-      throw new Error(
+  const apiKey = process.env["GROQ_API_KEY"];
+  if (provider === "groq" && apiKey) {
+
         "Groq is not configured yet. Add a GROQ_API_KEY secret to use the Groq provider.",
       );
     }
