@@ -15,13 +15,8 @@ export function resolveModel(provider: ProviderId): {
   model: LanguageModel;
   label: string;
 } {
-  if (provider === "groq") {
-    const apiKey = process.env["GROQ_API_KEY"];
-    if (!apiKey) {
-      throw new Error(
-        "Groq is not configured yet. Add a GROQ_API_KEY secret to use the Groq provider.",
-      );
-    }
+  const apiKey = process.env["GROQ_API_KEY"];
+  if (provider === "groq" && apiKey) {
     const groq = createOpenAICompatible({
       name: "groq",
       baseURL: "https://api.groq.com/openai/v1",
@@ -45,6 +40,10 @@ export function resolveModel(provider: ProviderId): {
 
   return {
     model: gateway("openai/gpt-5.6-sol"),
-    label: "Lovable AI · openai/gpt-5.6-sol",
+    label:
+      provider === "groq"
+        ? "Lovable AI · openai/gpt-5.6-sol (Groq key missing — fell back)"
+        : "Lovable AI · openai/gpt-5.6-sol",
   };
+
 }
