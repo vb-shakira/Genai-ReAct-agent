@@ -40,6 +40,10 @@ export function resolveModel(provider: ProviderId): {
 
   return {
     model: gateway("openai/gpt-5.6-sol"),
-    label: "Lovable AI · openai/gpt-5.6-sol",
+    label:
+      provider === "groq"
+        ? "Lovable AI · openai/gpt-5.6-sol (Groq key missing — fell back)"
+        : "Lovable AI · openai/gpt-5.6-sol",
   };
+
 }
