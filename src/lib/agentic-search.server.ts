@@ -44,20 +44,64 @@ function clip(text: string, max = 480) {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
+const STOPWORDS = new Set([
+  "what",
+  "which",
+  "how",
+  "does",
+  "the",
+  "and",
+  "for",
+  "are",
+  "with",
+  "from",
+  "that",
+  "this",
+  "used",
+  "use",
+  "give",
+  "about",
+  "into",
+  "official",
+  "site",
+]);
+
+function keywords(query: string) {
+  return query
+    .toLowerCase()
+    .replace(/site:\S+/g, "")
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+}
+
+/** Keep only hits that actually overlap the query keywords. */
+function relevant(hits: SearchHit[], kws: string[]) {
+  if (kws.length === 0) return hits;
+  return hits.filter((hit) => {
+    const text = `${hit.title} ${hit.snippet}`.toLowerCase();
+    return kws.some((kw) => text.includes(kw));
+  });
+}
+
 async function searchArxiv(query: string): Promise<SearchHit[]> {
+  const kws = keywords(query).slice(0, 5);
+  if (kws.length === 0) return [];
+  const expr = kws.map((kw) => `all:${kw}`).join(" AND ");
   const url = `https://export.arxiv.org/api/query?search_query=${encodeURIComponent(
-    `all:${query}`,
+    expr,
   )}&start=0&max_results=4&sortBy=relevance`;
   const res = await fetch(url);
   if (!res.ok) return [];
   const xml = await res.text();
   const entries = xml.split("<entry>").slice(1);
-  return entries.map((entry) => {
+  const hits = entries.map((entry) => {
     const title = stripTags(entry.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "Untitled");
     const summary = stripTags(entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1] ?? "");
     const link = entry.match(/<id>([\s\S]*?)<\/id>/)?.[1]?.trim() ?? "";
     return { title, url: link, snippet: clip(summary), source: "arXiv" as const };
   });
+  return relevant(hits, kws);
 }
 
 async function searchWikipedia(query: string): Promise<SearchHit[]> {
@@ -110,8 +154,11 @@ export async function searchAgenticWeb(rawQuery: string) {
     searchCommunity(query),
   ]);
 
-  const hits = results
-    .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+  const kws = keywords(query);
+  const hits = relevant(
+    results.flatMap((r) => (r.status === "fulfilled" ? r.value : [])),
+    kws,
+  )
     .filter((h) => h.url && h.snippet)
     .slice(0, 8);
 
