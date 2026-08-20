@@ -17,10 +17,6 @@ export function resolveModel(provider: ProviderId): {
 } {
   const apiKey = process.env["GROQ_API_KEY"];
   if (provider === "groq" && apiKey) {
-
-        "Groq is not configured yet. Add a GROQ_API_KEY secret to use the Groq provider.",
-      );
-    }
     const groq = createOpenAICompatible({
       name: "groq",
       baseURL: "https://api.groq.com/openai/v1",
